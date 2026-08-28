@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قراء الوحي — تلاوة وتسميع القرآن الكريم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0c1f1a;
+    --bg-panel:#12281f;
+    --bg-card:#0f2b21;
+    --gold:#c9a24b;
+    --gold-soft:#e8d5a3;
+    --teal:#1f5c48;
+    --teal-light:#2f7a5f;
+    --parchment:#f7f1e1;
+    --parchment-dim:#e9dfc4;
+    --ink:#1c1c1c;
+    --err:#c85a4a;
+    --ok:#4c9a6e;
+    --warn:#c99a3a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(201,162,75,0.08), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(201,162,75,0.06), transparent 45%),
+      var(--bg-deep);
+    color:var(--parchment);
+    font-family:'Cairo',sans-serif;
+    min-height:100vh;
+    line-height:1.7;
+  }
+  .quran-font{ font-family:'Amiri Quran','Scheherazade New', serif; }
+
+  /* ---- geometric frame corners (signature element) ---- */
+  .islamic-corner{
+    position:absolute; width:46px; height:46px; pointer-events:none;
+    border:2px solid var(--gold);
+    opacity:.75;
+  }
+  .islamic-corner::before{
+    content:''; position:absolute; inset:6px; border:1px solid var(--gold); opacity:.6;
+  }
+  .c-tl{top:-2px; right:-2px; border-left:none; border-bottom:none;}
+  .c-tr{top:-2px; left:-2px; border-right:none; border-bottom:none;}
+  .c-bl{bottom:-2px; right:-2px; border-left:none; border-top:none;}
+  .c-br{bottom:-2px; left:-2px; border-right:none; border-top:none;}
+
+  header{
+    padding:28px 20px 18px;
+    text-align:center;
+    border-bottom:1px solid rgba(201,162,75,0.25);
+    background:linear-gradient(180deg, rgba(0,0,0,0.15), transparent);
+  }
+  header h1{
+    font-family:'Amiri Quran',serif;
+    font-size:2.1rem; margin:0; color:var(--gold-soft);
+    letter-spacing:1px;
+  }
+  header p{ margin:6px 0 0; color:#b9c9c0; font-size:.92rem; }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    gap:22px;
+    max-width:1180px;
+    margin:24px auto;
+    padding:0 18px 60px;
+  }
+  @media (max-width:880px){ .layout{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid rgba(201,162,75,0.22);
+    border-radius:14px;
+    padding:18px;
+    position:relative;
+  }
+  .panel h2{
+    font-size:.95rem; color:var(--gold-soft); margin:0 0 12px;
+    display:flex; align-items:center; gap:8px;
+    border-bottom:1px dashed rgba(201,162,75,0.3);
+    padding-bottom:8px;
+  }
+  label{ font-size:.82rem; color:#a9bdb2; display:block; margin:12px 0 5px; }
+  select, input[type=number]{
+    width:100%; padding:9px 10px; border-radius:8px;
+    background:#0a1c16; border:1px solid rgba(201,162,75,0.35);
+    color:var(--parchment); font-family:'Cairo',sans-serif; font-size:.92rem;
+  }
+  select:focus, input:focus{ outline:none; border-color:var(--gold); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:10px 16px; border-radius:9px; border:1px solid var(--gold);
+    background:transparent; color:var(--gold-soft); cursor:pointer;
+    font-family:'Cairo',sans-serif; font-size:.88rem; font-weight:600;
+    transition:.2s;
+  }
+  .btn:hover{ background:rgba(201,162,75,0.14); }
+  .btn.solid{ background:var(--gold); color:#1c1608; border-color:var(--gold); }
+  .btn.solid:hover{ background:var(--gold-soft); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .btn.small{ padding:7px 11px; font-size:.78rem; }
+
+  /* mushaf page */
+  .mushaf-wrap{ position:relative; }
+  .mushaf{
+    background:
+      radial-gradient(ellipse at top, rgba(201,162,75,0.05), transparent 60%),
+      var(--parchment);
+    color:var(--ink);
+    border-radius:10px;
+    padding:34px 30px 30px;
+    position:relative;
+    box-shadow:0 18px 40px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(201,162,75,0.4);
+    min-height:260px;
+  }
+  .mushaf-title{
+    text-align:center; font-family:'Amiri Quran',serif; font-size:1.5rem;
+    color:#3b2a12; margin-bottom:4px;
+  }
+  .mushaf-sub{ text-align:center; font-size:.78rem; color:#8a7654; margin-bottom:18px; }
+  .basmala{ text-align:center; font-family:'Amiri Quran',serif; font-size:1.35rem; margin:8px 0 22px; color:#3b2a12; }
+
+  .ayah-text{
+    font-family:'Amiri Quran','Scheherazade New',serif;
+    font-size:1.85rem;
+    line-height:2.5;
+    text-align:justify;
+    text-align-last:right;
+  }
+  .ayah-span{ cursor:pointer; border-radius:6px; padding:2px 3px; transition:.15s; }
+  .ayah-span:hover{ background:rgba(201,162,75,0.18); }
+  .ayah-span.active{ background:rgba(31,92,72,0.18); box-shadow:0 0 0 1px rgba(31,92,72,0.4); }
+  .ayah-span.playing{ background:rgba(201,162,75,0.35); }
+  .ayah-num{
+    font-family:'Cairo',sans-serif; font-size:.85rem; display:inline-flex;
+    align-items:center; justify-content:center; width:26px; height:26px;
+    border:1.5px solid #8a7654; border-radius:50%; color:#5a4a26; margin:0 4px;
+    vertical-align:middle;
+  }
+
+  .loading{ text-align:center; color:#8a7654; padding:40px 0; font-size:.9rem; }
+
+  /* tasmi */
+  .tasmi-box{ margin-top:26px; }
+  .mic-btn{
+    width:74px; height:74px; border-radius:50%; border:2px solid var(--gold);
+    background:radial-gradient(circle, rgba(201,162,75,0.25), transparent 70%);
+    color:var(--gold-soft); font-size:1.6rem; cursor:pointer; margin:0 auto;
+    display:flex; align-items:center; justify-content:center;
+    transition:.2s;
+  }
+  .mic-btn.recording{
+    background:radial-gradient(circle, rgba(200,90,74,0.35), transparent 70%);
+    border-color:var(--err); color:#ffd7cf;
+    animation:pulse 1.2s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(200,90,74,0.45); }
+    70%{ box-shadow:0 0 0 16px rgba(200,90,74,0); }
+    100%{ box-shadow:0 0 0 0 rgba(200,90,74,0); }
+  }
+  .mic-label{ text-align:center; font-size:.82rem; color:#a9bdb2; margin-top:10px; }
+
+  .result-card{
+    background:var(--bg-card); border:1px solid rgba(201,162,75,0.22);
+    border-radius:12px; padding:18px; margin-top:16px;
+  }
+  .result-title{ color:var(--gold-soft); font-size:.95rem; margin:0 0 10px; font-weight:700; }
+  .diff-line{ font-family:'Amiri Quran',serif; font-size:1.5rem; line-height:2.3; text-align:justify; text-align-last:right; }
+  .w-ok{ color:var(--ok); }
+  .w-missing{ color:var(--err); text-decoration:line-through; text-decoration-color:rgba(200,90,74,0.7); }
+  .w-extra{ background:rgba(200,90,74,0.18); color:#ffb3a3; border-radius:4px; padding:0 3px; }
+  .w-tashkeel{ color:var(--warn); border-bottom:2px dotted var(--warn); }
+
+  .legend{ display:flex; gap:16px; flex-wrap:wrap; font-size:.78rem; margin-top:12px; color:#a9bdb2; }
+  .legend span::before{ content:'●'; margin-left:5px; font-size:.7rem; }
+  .legend .l-ok::before{ color:var(--ok); }
+  .legend .l-missing::before{ color:var(--err); }
+  .legend .l-extra::before{ color:#ffb3a3; }
+  .legend .l-tashkeel::before{ color:var(--warn); }
+
+  .score-row{ display:flex; gap:14px; margin-top:14px; flex-wrap:wrap; }
+  .score-chip{
+    background:#0a1c16; border:1px solid rgba(201,162,75,0.25); border-radius:9px;
+    padding:8px 14px; font-size:.82rem; color:#cfe0d6; min-width:120px; text-align:center;
+  }
+  .score-chip b{ display:block; font-size:1.3rem; color:var(--gold-soft); }
+
+  .tajweed-list{ margin-top:14px; font-size:.85rem; color:#cfe0d6; }
+  .tajweed-list li{ margin-bottom:6px; }
+  .tajweed-list b{ color:var(--gold-soft); }
+
+  .note{
+    font-size:.78rem; color:#8fa89b; border-right:3px solid var(--teal-light);
+    padding:8px 12px; background:rgba(31,92,72,0.12); border-radius:6px; margin-top:14px;
+  }
+
+  .range-info{
+    font-size:.8rem; color:var(--gold-soft); font-weight:700;
+    border:1px solid rgba(201,162,75,0.4); border-radius:8px;
+    padding:8px 10px; margin-top:12px; text-align:center;
+    background:rgba(201,162,75,0.08);
+  }
+
+  .tasmi-range-badge{
+    display:table; margin:0 auto 16px; text-align:center;
+    font-size:.85rem; font-weight:700; color:#1c1608;
+    background:var(--gold); border-radius:20px; padding:6px 16px;
+    letter-spacing:.3px;
+  }
+  .tasmi-range-badge.unset{
+    background:transparent; color:#a9bdb2; border:1px dashed rgba(201,162,75,0.4);
+  }
+
+  footer{ text-align:center; padding:24px 0 40px; color:#5f7568; font-size:.8rem; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(201,162,75,0.35); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>قراء الوحي</h1>
+  <p id="headerSub">تلاوة القرآن الكريم — ومساحة للتسميع الذاتي</p>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar: navigation -->
+  <div class="panel" id="sidebar">
+    <div class="islamic-corner c-tl"></div><div class="islamic-corner c-tr"></div>
+    <div class="islamic-corner c-bl"></div><div class="islamic-corner c-br"></div>
+
+    <h2>🎙️ اختيار القارئ</h2>
+    <label for="reciterSelect">الشيخ / القارئ</label>
+    <select id="reciterSelect"></select>
+
+    <h2 style="margin-top:22px;">📖 اختيار السورة والآية</h2>
+    <label for="surahSelect">السورة</label>
+    <select id="surahSelect"></select>
+
+    <label for="ayahSelect">حدّد الآية</label>
+    <select id="ayahSelect"></select>
+
+    <div class="btn-row">
+      <button class="btn solid small" id="playAyahBtn">▶ تشغيل الآية</button>
+      <button class="btn small" id="playFromBtn">▶ تشغيل من هنا للنهاية</button>
+      <button class="btn small" id="stopBtn">⏹ إيقاف</button>
+    </div>
+
+    <h2 style="margin-top:22px;">🎙️ التسميع</h2>
+    <label for="rangeStart">من آية</label>
+    <select id="rangeStart"></select>
+    <label for="rangeEnd">إلى آية</label>
+    <select id="rangeEnd"></select>
+    <div class="range-info" id="rangeInfo">المقطع المحدد للتسميع: —</div>
+    <div class="note">التسميع يعتمد على تحويل صوتك إلى نص عبر متصفحك (يعمل بشكل أفضل على Chrome)، ثم مقارنته بنص الآيات. يحتاج إذن الميكروفون.</div>
+  </div>
+
+  <!-- Main: mushaf + tasmi results -->
+  <div>
+    <div class="mushaf-wrap">
+      <div class="mushaf" id="mushaf">
+        <div class="loading">... جارٍ تحميل السورة</div>
+      </div>
+    </div>
+
+    <div class="tasmi-box panel">
+      <div class="islamic-corner c-tl"></div><div class="islamic-corner c-tr"></div>
+      <div class="islamic-corner c-bl"></div><div class="islamic-corner c-br"></div>
+      <h2>جلسة التسميع</h2>
+      <div class="tasmi-range-badge" id="tasmiRangeBadge">حدّد سورة ومقطعًا أولًا</div>
+      <div class="mic-btn" id="micBtn">🎤</div>
+      <div class="mic-label" id="micLabel">اضغط وابدأ تلاوة الآيات المحددة من الشريط الجانبي</div>
+
+      <div id="resultArea"></div>
+    </div>
+  </div>
+</div>
+
+<footer id="footerNote">صُنع بمحبة لطلاب القرآن الكريم — النصوص عبر Al Quran Cloud، والتلاوة عبر EveryAyah</footer>
+
+<script>
+const API_BASE = 'https://api.alquran.cloud/v1';
+
+// ---- reciters available on EveryAyah (folder name -> display name) ----
+const RECITERS = [
+  { id:'Alafasy_128kbps',                 name:'مشاري راشد العفاسي' },
+  { id:'Abdul_Basit_Murattal_192kbps',    name:'عبد الباسط عبد الصمد (مرتل)' },
+  { id:'Abdul_Basit_Mujawwad_128kbps',    name:'عبد الباسط عبد الصمد (مجود)' },
+  { id:'Abdurrahmaan_As-Sudais_192kbps',  name:'عبد الرحمن السديس' },
+  { id:'Abu_Bakr_Ash-Shaatree_128kbps',   name:'أبو بكر الشاطري' },
+  { id:'Hani_Rifai_192kbps',              name:'هاني الرفاعي' },
+  { id:'Husary_128kbps',                  name:'محمود خليل الحصري' },
+  { id:'Husary_Muallim_128kbps',          name:'محمود خليل الحصري (المعلّم)' },
+  { id:'Minshawy_Murattal_128kbps',       name:'محمد صديق المنشاوي (مرتل)' },
+  { id:'Minshawy_Mujawwad_192kbps',       name:'محمد صديق المنشاوي (مجود)' },
+  { id:'Mohammad_al_Tablaway_128kbps',    name:'محمد الطبلاوي' },
+  { id:'Muhammad_Ayyoub_128kbps',         name:'محمد أيوب' },
+  { id:'Muhammad_Jibreel_128kbps',        name:'محمد جبريل' },
+  { id:'Saood_ash-Shuraym_128kbps',       name:'سعود الشريم' },
+  { id:'Yasser_Ad-Dussary_128kbps',       name:'ياسر الدوسري' },
+  { id:'Maher_AlMuaiqly_64kbps',          name:'ماهر المعيقلي' },
+  { id:'Ghamadi_40kbps',                  name:'سعد الغامدي' },
+  { id:'Ibrahim_Akhdar_32kbps',           name:'إبراهيم الأخضر' },
+  { id:'Fares_Abbad_64kbps',              name:'فارس عباد' },
+  { id:'Karim_Mansoori_40kbps',           name:'كريم منصوري' }
+];
+let currentReciter = RECITERS[0].id;
+
+function audioBase(){
+  return `https://everyayah.com/data/${currentReciter}`;
+}
+
+let surahList = [];
+let currentSurah = null;   // full surah object with ayahs [{numberInSurah, text}]
+let currentSurahNum = 1;
+let selectedAyah = 1;
+let audioEl = new Audio();
+let playQueue = [];
+let playingIndex = -1;
+
+const pad3 = n => String(n).padStart(3,'0');
+
+function stripTashkeel(str){
+  return str.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08F0-\u08FF]/g,'')
+            .replace(/[\u0640]/g,'') // tatweel
+            .replace(/\s+/g,' ').trim();
+}
+
+// The Uthmani mushaf script (used for display/tajweed hints) writes letters differently
+// from the plain modern spelling that browser speech-recognition returns (e.g. it uses
+// وصلة الألف "ٱ" where normal typing uses "ا", plus other letter-shape variants).
+// stripTashkeel() only removes diacritics, so those *letter* differences alone were
+// causing almost every word to be marked wrong even when correctly recited.
+// normalizeArabic() is used ONLY for matching/scoring (never for what's displayed),
+// and unifies those letter-shape variants on top of removing diacritics.
+function normalizeArabic(str){
+  return stripTashkeel(str)
+    .replace(/[إأآٱ]/g, 'ا')   // hamza/madda/wasla seats on alef -> plain alef
+    .replace(/ى/g, 'ي')        // alef maksura -> ya
+    .replace(/ة/g, 'ه')        // ta marbuta -> ha
+    .replace(/ؤ/g, 'و')        // waw with hamza -> waw
+    .replace(/ئ/g, 'ي')        // ya with hamza -> ya
+    .replace(/ء/g, '')         // standalone hamza -> drop
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ---------- reciter selector ----------
+function populateReciterSelect(){
+  const sel = document.getElementById('reciterSelect');
+  sel.innerHTML = RECITERS.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  sel.value = currentReciter;
+  updateHeaderReciter();
+}
+
+function updateHeaderReciter(){
+  const r = RECITERS.find(x => x.id === currentReciter);
+  document.getElementById('headerSub').textContent = `تلاوة القرآن الكريم بصوت الشيخ ${r ? r.name : ''} — ومساحة للتسميع الذاتي`;
+  document.getElementById('footerNote').textContent = `صُنع بمحبة لطلاب القرآن الكريم — النصوص عبر Al Quran Cloud، والتلاوة بصوت الشيخ ${r ? r.name : ''} عبر EveryAyah`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  populateReciterSelect();
+});
+
+// ---------- load surah list ----------
+async function loadSurahList(){
+  const res = await fetch(`${API_BASE}/surah`);
+  const data = await res.json();
+  surahList = data.data;
+  const sel = document.getElementById('surahSelect');
+  sel.innerHTML = surahList.map(s =>
+    `<option value="${s.number}">${s.number}. ${s.name} — ${s.englishName}</option>`
+  ).join('');
+  sel.value = currentSurahNum;
+  await loadSurah(currentSurahNum);
+}
+
+async function loadSurah(num){
+  document.getElementById('mushaf').innerHTML = '<div class="loading">... جارٍ تحميل السورة</div>';
+  const res = await fetch(`${API_BASE}/surah/${num}/quran-uthmani`);
+  const data = await res.json();
+  currentSurah = data.data;
+  currentSurahNum = num;
+  populateAyahSelectors();
+  renderMushaf();
+}
+
+function populateAyahSelectors(){
+  const count = currentSurah.ayahs.length;
+  const opts = currentSurah.ayahs.map(a => `<option value="${a.numberInSurah}">آية ${a.numberInSurah}</option>`).join('');
+  for(const id of ['ayahSelect','rangeStart','rangeEnd']){
+    document.getElementById(id).innerHTML = opts;
+  }
+  document.getElementById('ayahSelect').value = 1;
+  document.getElementById('rangeStart').value = 1;
+  document.getElementById('rangeEnd').value = Math.min(3,count);
+  selectedAyah = 1;
+  updateRangeInfo();
+}
+
+// keeps the surah name + ayah range shown clearly in two places (sidebar + tasmi box)
+// so the range passed to the speech-recognition/comparison logic is always unambiguous
+function updateRangeInfo(){
+  if(!currentSurah) return;
+  const start = Number(document.getElementById('rangeStart').value);
+  const end = Number(document.getElementById('rangeEnd').value);
+  const lo = Math.min(start,end), hi = Math.max(start,end);
+  const label = lo === hi
+    ? `سورة ${currentSurah.name} — الآية ${lo}`
+    : `سورة ${currentSurah.name} — من الآية ${lo} إلى الآية ${hi}`;
+
+  document.getElementById('rangeInfo').textContent = `المقطع المحدد للتسميع: ${label}`;
+
+  const badge = document.getElementById('tasmiRangeBadge');
+  badge.textContent = `🎯 ${label}`;
+  badge.classList.remove('unset');
+}
+
+function renderMushaf(){
+  const box = document.getElementById('mushaf');
+  const needsBasmala = currentSurahNum !== 1 && currentSurahNum !== 9;
+  let html = `<div class="islamic-corner c-tl"></div><div class="islamic-corner c-tr"></div>
+              <div class="islamic-corner c-bl"></div><div class="islamic-corner c-br"></div>
+              <div class="mushaf-title">سورة ${currentSurah.name}</div>
+              <div class="mushaf-sub">${currentSurah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} — ${currentSurah.ayahs.length} آية</div>`;
+  if(needsBasmala){
+    html += `<div class="basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
+  }
+  html += `<div class="ayah-text">`;
+  currentSurah.ayahs.forEach(a => {
+    let text = a.text;
+    // remove basmala duplicated inside ayah 1 text if present (API already strips for most, keep as-is otherwise)
+    html += `<span class="ayah-span" data-n="${a.numberInSurah}" onclick="selectAyah(${a.numberInSurah})">${text}<span class="ayah-num">${a.numberInSurah}</span></span> `;
+  });
+  html += `</div>`;
+  box.innerHTML = html;
+  highlightSelected();
+}
+
+function selectAyah(n){
+  selectedAyah = n;
+  document.getElementById('ayahSelect').value = n;
+  highlightSelected();
+}
+
+function highlightSelected(){
+  document.querySelectorAll('.ayah-span').forEach(el=>{
+    el.classList.toggle('active', Number(el.dataset.n) === selectedAyah);
+  });
+}
+
+// ---------- audio playback ----------
+function ayahAudioUrl(surahNum, ayahNum){
+  return `${audioBase()}/${pad3(surahNum)}${pad3(ayahNum)}.mp3`;
+}
+
+function stopPlayback(){
+  audioEl.pause();
+  playQueue = [];
+  playingIndex = -1;
+  document.querySelectorAll('.ayah-span.playing').forEach(el=>el.classList.remove('playing'));
+}
+
+function playAyah(n){
+  stopPlayback();
+  playQueue = [n];
+  playingIndex = 0;
+  playCurrentInQueue();
+}
+
+function playFrom(n){
+  stopPlayback();
+  const all = currentSurah.ayahs.map(a=>a.numberInSurah);
+  playQueue = all.filter(x => x >= n);
+  playingIndex = 0;
+  playCurrentInQueue();
+}
+
+function playCurrentInQueue(){
+  if(playingIndex < 0 || playingIndex >= playQueue.length) return;
+  const n = playQueue[playingIndex];
+  document.querySelectorAll('.ayah-span.playing').forEach(el=>el.classList.remove('playing'));
+  const el = document.querySelector(`.ayah-span[data-n="${n}"]`);
+  if(el){ el.classList.add('playing'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+  audioEl.src = ayahAudioUrl(currentSurahNum, n);
+  audioEl.play().catch(()=>{});
+}
+
+audioEl.addEventListener('ended', () => {
+  playingIndex++;
+  if(playingIndex < playQueue.length){
+    playCurrentInQueue();
+  } else {
+    document.querySelectorAll('.ayah-span.playing').forEach(el=>el.classList.remove('playing'));
+  }
+});
+
+document.getElementById('playAyahBtn').onclick = () => playAyah(selectedAyah);
+document.getElementById('playFromBtn').onclick = () => playFrom(selectedAyah);
+document.getElementById('stopBtn').onclick = stopPlayback;
+
+document.getElementById('surahSelect').onchange = e => loadSurah(Number(e.target.value));
+document.getElementById('ayahSelect').onchange = e => selectAyah(Number(e.target.value));
+document.getElementById('rangeStart').onchange = updateRangeInfo;
+document.getElementById('rangeEnd').onchange = updateRangeInfo;
+document.getElementById('reciterSelect').onchange = e => {
+  currentReciter = e.target.value;
+  updateHeaderReciter();
+  // if something is currently loaded/playing with the old reciter's audio, stop it
+  // so the next play uses the newly selected reciter
+  stopPlayback();
+};
+
+// ================= TASMI' (recitation check) =================
+
+// naive word-level diff (Myers-ish via simple LCS) between reference and spoken words
+function wordDiff(refWords, spokenWords){
+  const n = refWords.length, m = spokenWords.length;
+  const dp = Array.from({length:n+1}, ()=>new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--){
+    for(let j=m-1;j>=0;j--){
+      if(normalizeArabic(refWords[i]) === normalizeArabic(spokenWords[j])){
+        dp[i][j] = dp[i+1][j+1]+1;
+      } else {
+        dp[i][j] = Math.max(dp[i+1][j], dp[i][j+1]);
+      }
+    }
+  }
+  const ops = [];
+  let i=0,j=0;
+  while(i<n && j<m){
+    if(normalizeArabic(refWords[i]) === normalizeArabic(spokenWords[j])){
+      ops.push({type:'match', ref:refWords[i], spoken:spokenWords[j]});
+      i++; j++;
+    } else if(dp[i+1][j] >= dp[i][j+1]){
+      ops.push({type:'missing', ref:refWords[i]});
+      i++;
+    } else {
+      ops.push({type:'extra', spoken:spokenWords[j]});
+      j++;
+    }
+  }
+  while(i<n){ ops.push({type:'missing', ref:refWords[i]}); i++; }
+  while(j<m){ ops.push({type:'extra', spoken:spokenWords[j]}); j++; }
+  return ops;
+}
+
+// very approximate tajweed hints derived from the WRITTEN reference text only
+// (this cannot verify how the user actually pronounced the ayah — see disclaimer)
+function tajweedHints(refText){
+  const hints = [];
+  const words = refText.split(/\s+/);
+  words.forEach((w, idx) => {
+    // tanween -> idgham/ikhfa/iqlab/izhar depends on the FIRST letter of the NEXT word
+    if(/[\u064B\u064C\u064D]$/.test(w) || /\u0652?ن$/.test(w)){
+      const nextWord = words[idx+1];
+      if(nextWord){
+        const first = stripTashkeel(nextWord)[0];
+        if('يرملون'.includes(first)){
+          hints.push(`إدغام محتمل عند «${w} ${nextWord}» — انتبه لإدغام النون/التنوين في حرف "${first}"`);
+        } else if(first === 'ب'){
+          hints.push(`إقلاب محتمل عند «${w} ${nextWord}» — النون الساكنة/التنوين تُقلب ميمًا قبل الباء`);
+        } else if('ءهعحغخ'.includes(first)){
+          hints.push(`إظهار عند «${w} ${nextWord}» — النون/التنوين تُظهر وضوحًا قبل "${first}"`);
+        } else {
+          hints.push(`إخفاء محتمل عند «${w} ${nextWord}» — تدريب على غنة الإخفاء قبل "${first}"`);
+        }
+      }
+    }
+    // simple madd letter check
+    if(/[اوي][\u0670\u0653]?(?=[\u0621\u0654]|$)/.test(w) && /(اۤ|آ)/.test(w)){
+      hints.push(`مد لازم/واجب محتمل في «${w}» — تأكد من إشباع المد بالمقدار الصحيح`);
+    }
+    if(/ّ/.test(w)){
+      hints.push(`شدة في «${w}» — احرص على إظهار التشديد بوضوح`);
+    }
+  });
+  // dedupe
+  return [...new Set(hints)].slice(0, 8);
+}
+
+let recognition = null;
+let isRecording = false;
+
+function getSelectedRangeText(){
+  const start = Number(document.getElementById('rangeStart').value);
+  const end = Number(document.getElementById('rangeEnd').value);
+  const lo = Math.min(start,end), hi = Math.max(start,end);
+  const ayahs = currentSurah.ayahs.filter(a => a.numberInSurah >= lo && a.numberInSurah <= hi);
+  return ayahs.map(a=>a.text).join(' ');
+}
+
+function getSelectedRangeLabel(){
+  const start = Number(document.getElementById('rangeStart').value);
+  const end = Number(document.getElementById('rangeEnd').value);
+  const lo = Math.min(start,end), hi = Math.max(start,end);
+  return lo === hi
+    ? `سورة ${currentSurah.name} — الآية ${lo}`
+    : `سورة ${currentSurah.name} — من الآية ${lo} إلى الآية ${hi}`;
+}
+
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    document.getElementById('micLabel').textContent = 'المتصفح لا يدعم خاصية التعرف على الصوت (جرّب Chrome على الكمبيوتر).';
+    document.getElementById('micBtn').style.opacity = .35;
+    document.getElementById('micBtn').style.cursor = 'not-allowed';
+    return;
+  }
+  recognition = new SR();
+  recognition.lang = 'ar-SA';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = true;
+
+  let finalTranscript = '';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    finalTranscript = '';
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micLabel').textContent = 'جارٍ الاستماع... اضغط مرة أخرى لإنهاء التسميع';
+  };
+
+  recognition.onresult = (event) => {
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      if(event.results[i].isFinal){
+        finalTranscript += event.results[i][0].transcript + ' ';
+      }
+    }
+  };
+
+  recognition.onerror = (e) => {
+    document.getElementById('micLabel').textContent = 'حدث خطأ في التعرف على الصوت: ' + e.error + ' — تأكد من إذن الميكروفون.';
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    if(finalTranscript.trim().length > 0){
+      document.getElementById('micLabel').textContent = 'اضغط وابدأ تلاوة الآيات المحددة من الشريط الجانبي';
+      evaluateRecitation(finalTranscript.trim());
+    } else {
+      document.getElementById('micLabel').textContent = 'لم يُلتقط كلام. حاول التحدث بوضوح وأقرب للميكروفون.';
+    }
+  };
+
+  document.getElementById('micBtn').onclick = () => {
+    if(!currentSurah) return;
+    if(isRecording){
+      recognition.stop();
+    } else {
+      try{ recognition.start(); }catch(e){}
+    }
+  };
+}
+
+function evaluateRecitation(spokenRaw){
+  const refText = getSelectedRangeText();
+  const refWords = refText.split(/\s+/).filter(Boolean);
+  const spokenWords = spokenRaw.split(/\s+/).filter(Boolean);
+
+  const ops = wordDiff(refWords, spokenWords);
+
+  let correct=0, missing=0, extra=0, tashkeelIssues=0;
+  let diffHtml = '';
+  ops.forEach(op => {
+    if(op.type === 'match'){
+      const sameTashkeel = op.ref === op.spoken; // rarely true since STT gives no diacritics, informational only
+      correct++;
+      diffHtml += `<span class="w-ok">${op.ref}</span> `;
+    } else if(op.type === 'missing'){
+      missing++;
+      diffHtml += `<span class="w-missing">${op.ref}</span> `;
+    } else {
+      extra++;
+      diffHtml += `<span class="w-extra">${op.spoken}</span> `;
+    }
+  });
+
+  const total = refWords.length;
+  const accuracy = total ? Math.round((correct/total)*100) : 0;
+
+  const hints = tajweedHints(refText);
+
+  const resultArea = document.getElementById('resultArea');
+  resultArea.innerHTML = `
+    <div class="result-card">
+      <div class="result-title">نتيجة التسميع — ${getSelectedRangeLabel()}</div>
+      <div class="diff-line">${diffHtml}</div>
+      <div class="legend">
+        <span class="l-ok">كلمة صحيحة</span>
+        <span class="l-missing">كلمة سقطت من التلاوة</span>
+        <span class="l-extra">كلمة زائدة أو غير مطابقة</span>
+      </div>
+      <div class="score-row">
+        <div class="score-chip"><b>${accuracy}%</b>نسبة المطابقة</div>
+        <div class="score-chip"><b>${missing}</b>كلمات سقطت</div>
+        <div class="score-chip"><b>${extra}</b>كلمات زائدة/خاطئة</div>
+        <div class="score-chip"><b>${total}</b>إجمالي كلمات الآيات</div>
+      </div>
+      <div class="tajweed-list">
+        <div class="result-title" style="margin-top:16px;">تنبيهات تجويدية تقريبية على نص الآيات المحددة</div>
+        <ul>
+          ${hints.length ? hints.map(h=>`<li>${h}</li>`).join('') : '<li>لا توجد ملاحظات بارزة على هذا المقطع.</li>'}
+        </ul>
+      </div>
+      <div class="note">
+        ⚠️ التعرف على الصوت في المتصفح يحوّل كلامك إلى نص عادي بلا تشكيل، لذلك دقة إظهار "أخطاء التشكيل" هنا محدودة، والتنبيهات التجويدية مبنية على تحليل نص الآية المكتوب فقط وليست تحليلًا صوتيًا حقيقيًا لأدائك. اعتبرها أداة مساعدة للمراجعة الذاتية، ولا تُغني عن سماع شيخ أو معلّم متخصص لضبط المخارج والتجويد.
+      </div>
+    </div>
+  `;
+}
+
+// ---------- init ----------
+loadSurahList();
+setupRecognition();
+</script>
+</body>
+</html>
